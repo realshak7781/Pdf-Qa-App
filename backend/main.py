@@ -4,9 +4,21 @@ import shutil
 import os
 from pathlib import Path
 from database import engine, Base
-from pdf_processing import extract_text, build_index, answer_question
-from crud import save_pdf_metadata
-from pydantic import BaseModel
+from pdf_processing import extract_text
+from langchain.text_splitter import CharacterTextSplitter
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.vectorstores import FAISS
+from langchain.chains.question_answering import load_qa_chain
+from langchain_huggingface import HuggingFaceEndpoint
+import dotenv
+
+# Load environment variables
+dotenv.load_dotenv()
+
+# Ensure API token is set
+HF_API_TOKEN = os.getenv("HUGGINGFACEHUB_API_TOKEN")
+if not HF_API_TOKEN:
+    raise ValueError("HUGGINGFACEHUB_API_TOKEN not found. Set it in your environment variables.")
 
 app = FastAPI()
 
@@ -24,6 +36,15 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 Base.metadata.create_all(bind=engine)
 
+# Load Hugging Face Model
+llm = HuggingFaceEndpoint(
+    repo_id="google/flan-t5-large",
+    temperature=0.5,
+    max_length=512
+)
+
+vector_store = None
+
 @app.post("/upload/")
 async def upload_pdf(file: UploadFile = File(...)):
     if not file:
@@ -39,27 +60,30 @@ async def upload_pdf(file: UploadFile = File(...)):
         # Extract text from PDF
         text_content = extract_text(str(file_path))
 
-        # Save metadata
-        save_pdf_metadata(sanitized_filename, text_content)
+        # Split text into chunks
+        text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+        texts = text_splitter.split_text(text_content)
 
-        return {"filename": sanitized_filename, "message": "File uploaded successfully"}
+        # Generate embeddings
+        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        global vector_store
+        vector_store = FAISS.from_texts(texts, embeddings)
+
+        return {"filename": sanitized_filename, "message": "File uploaded and processed successfully"}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
 
-class QuestionRequest(BaseModel):
-    question: str
-
 @app.post("/ask/")
-async def ask_question(request: QuestionRequest):
+async def ask_question(question: str):
     try:
-        print(f"🧐 Received question: {request.question}")
+        if vector_store is None:
+            raise HTTPException(status_code=500, detail="No document processed yet.")
 
-        index = build_index()
-        if index is None:
-            raise HTTPException(status_code=500, detail="Index could not be built.")
-
-        response = answer_question(index, request.question)
+        # Load QA chain
+        qa_chain = load_qa_chain(llm, chain_type="stuff")
+        docs = vector_store.similarity_search(question, k=5)
+        response = qa_chain.run(input_documents=docs, question=question)
 
         return {"answer": response}
 
