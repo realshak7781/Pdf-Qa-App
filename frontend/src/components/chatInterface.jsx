@@ -44,43 +44,48 @@ const ChatInterface = () => {
     }
   };
   
-
-  // Handle Sending Message
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!inputMessage.trim()) return;
-
+  
+    const trimmedMessage = inputMessage.trim();
+    if (!trimmedMessage) return;
+  
+    // User's message
     const userMessage = {
-      text: inputMessage,
+      text: trimmedMessage,
       type: "user",
-      initial: inputMessage[0].toUpperCase(),
+      initial: trimmedMessage[0].toUpperCase(),
     };
-
+  
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setInputMessage("");
     setIsLoading(true);
-
+  
     try {
-      const response = await axios.post(`${API_URL}/ask/`, {
-        question: inputMessage,
-      });
-
-      const aiResponse = {
-        text: response.data.answer || "I couldn't find an answer to that.",
-        type: "ai",
-      };
-
-      setMessages((prevMessages) => [...prevMessages, aiResponse]);
+      const response = await axios.post(`${API_URL}/ask/`, { question: trimmedMessage });
+  
+      if (response.status === 200 && response.data.answer) {
+        const aiResponse = {
+          text: response.data.answer,
+          type: "ai",
+        };
+  
+        setMessages((prevMessages) => [...prevMessages, aiResponse]);
+      } else {
+        throw new Error("Invalid response from server");
+      }
     } catch (error) {
       console.error("Error getting answer:", error);
+  
       setMessages((prevMessages) => [
         ...prevMessages,
-        { text: "Error retrieving response.", type: "ai" },
+        { text: "Sorry, I couldn't retrieve a response.", type: "ai" },
       ]);
     } finally {
       setIsLoading(false);
     }
   };
+  
 
   return (
     <div className="min-h-screen bg-gray-50">
