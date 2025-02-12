@@ -1,5 +1,6 @@
 import fitz  # PyMuPDF
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 def extract_text(pdf_path: str) -> str:
     """Extracts text from a PDF file."""
@@ -10,7 +11,7 @@ def extract_text(pdf_path: str) -> str:
     return text
 
 def build_index():
-    """Builds an index from PDFs in the 'uploads' directory."""
+    """Builds an index from PDFs in the 'uploads' directory using local embeddings."""
     try:
         print("📂 Loading PDFs from 'uploads' directory...")
         reader = SimpleDirectoryReader("uploads")
@@ -20,7 +21,11 @@ def build_index():
             raise ValueError("❌ No PDF documents found in 'uploads' directory.")
 
         print(f"✅ Loaded {len(docs)} documents. Building index...")
-        index = VectorStoreIndex.from_documents(docs)
+
+        # Use HuggingFace Embeddings (Local Model)
+        embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
+        index = VectorStoreIndex.from_documents(docs, embed_model=embed_model)
 
         print("✅ Index built successfully!")
         return index
