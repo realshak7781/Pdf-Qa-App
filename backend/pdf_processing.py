@@ -1,5 +1,6 @@
 import fitz  # PyMuPDF
-from llama_index import SimpleDirectoryReader, GPTVectorStoreIndex
+from llama_index.core import SimpleDirectoryReader  # Updated import path
+from llama_index.core import VectorStoreIndex  # Updated import path
 
 def extract_text(pdf_path: str) -> str:
     doc = fitz.open(pdf_path)
@@ -11,10 +12,10 @@ def extract_text(pdf_path: str) -> str:
 def build_index():
     reader = SimpleDirectoryReader("uploads")
     docs = reader.load_data()
-    index = GPTVectorStoreIndex.from_documents(docs)
+    index = VectorStoreIndex.from_documents(docs)  # Updated class name
     return index
 
 def answer_question(index, query: str):
-    retriever = index.as_retriever()
-    response = retriever.query(query)
+    query_engine = index.as_query_engine()  # Updated method
+    response = query_engine.query(query)
     return response.response

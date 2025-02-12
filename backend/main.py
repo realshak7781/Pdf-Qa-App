@@ -6,6 +6,7 @@ from database import engine, Base
 from pdf_processing import extract_text
 from crud import save_pdf_metadata
 from models import Document
+import uvicorn
 
 app = FastAPI()
 
@@ -29,3 +30,6 @@ async def upload_pdf(file: UploadFile = File(...)):
 @app.get("/")
 async def root():
     return {"message": "PDF Q&A API is running"}
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
