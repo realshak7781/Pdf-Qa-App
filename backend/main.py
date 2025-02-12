@@ -6,11 +6,11 @@ from pathlib import Path
 from database import engine, Base
 from pdf_processing import extract_text
 from langchain.text_splitter import CharacterTextSplitter
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import FAISS
-from langchain.chains.question_answering import load_qa_chain
-from langchain_huggingface import HuggingFaceEndpoint
+from langchain_community.embeddings import HuggingFaceEmbeddings  # Updated import
+from langchain_community.vectorstores import FAISS  # Updated import
+from huggingface_hub import InferenceClient
 import dotenv
+from pydantic import BaseModel
 
 # Load environment variables
 dotenv.load_dotenv()
@@ -18,8 +18,9 @@ dotenv.load_dotenv()
 # Ensure API token is set
 HF_API_TOKEN = os.getenv("HUGGINGFACEHUB_API_TOKEN")
 if not HF_API_TOKEN:
-    raise ValueError("HUGGINGFACEHUB_API_TOKEN not found. Set it in your environment variables.")
+    raise ValueError("⚠️ HUGGINGFACEHUB_API_TOKEN not found. Set it in your .env file!")
 
+# Initialize FastAPI app
 app = FastAPI()
 
 # Configure CORS
@@ -36,63 +37,85 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 Base.metadata.create_all(bind=engine)
 
-# Load Hugging Face Model
-llm = HuggingFaceEndpoint(
-    repo_id="google/flan-t5-large",
-    temperature=0.5,
-    max_length=512
-)
+# Hugging Face Model Client
+client = InferenceClient(model="google/flan-t5-large", token=HF_API_TOKEN)
 
+# Global variable for vector store
 vector_store = None
+
+# Pydantic Model for `/ask/` endpoint
+class QuestionRequest(BaseModel):
+    question: str
 
 @app.post("/upload/")
 async def upload_pdf(file: UploadFile = File(...)):
+    """Uploads and processes a PDF file for question answering."""
     if not file:
-        return {"error": "No file received"}
+        raise HTTPException(status_code=400, detail="No file received")
 
     sanitized_filename = file.filename.replace(" ", "_")  # Avoid spaces
     file_path = Path(UPLOAD_DIR) / sanitized_filename
 
     try:
+        # Save the uploaded file
         with file_path.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
         # Extract text from PDF
         text_content = extract_text(str(file_path))
 
+        if not text_content:
+            raise HTTPException(status_code=400, detail="No text found in the PDF")
+
         # Split text into chunks
         text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
         texts = text_splitter.split_text(text_content)
 
-        # Generate embeddings
+        # Generate embeddings and create vector store
         embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
         global vector_store
         vector_store = FAISS.from_texts(texts, embeddings)
 
-        return {"filename": sanitized_filename, "message": "File uploaded and processed successfully"}
+        return {"filename": sanitized_filename, "message": "✅ File uploaded and processed successfully"}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"❌ File upload failed: {str(e)}")
 
 @app.post("/ask/")
-async def ask_question(question: str):
+async def ask_question(request: QuestionRequest):
+    """Processes a user question and returns an answer."""
     try:
         if vector_store is None:
-            raise HTTPException(status_code=500, detail="No document processed yet.")
+            raise HTTPException(status_code=400, detail="⚠️ No document processed yet. Upload a PDF first.")
 
-        # Load QA chain
-        qa_chain = load_qa_chain(llm, chain_type="stuff")
-        docs = vector_store.similarity_search(question, k=5)
-        response = qa_chain.run(input_documents=docs, question=question)
+        # Retrieve relevant document chunks
+        docs = vector_store.similarity_search(request.question, k=5)
+        context = "\n".join([doc.page_content for doc in docs])
+
+        # Debugging: Print context and question
+        print(f"Context: {context}")
+        print(f"Question: {request.question}")
+
+        # Prepare query for Hugging Face model
+        prompt = f"Context: {context}\n\nQuestion: {request.question}\n\nAnswer:"
+        
+        # Generate response with valid max_new_tokens
+        response = client.text_generation(
+            prompt,
+            max_new_tokens=250,  # Reduced to 250 to comply with model limits
+            temperature=0.5
+        )
 
         return {"answer": response}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing question: {str(e)}")
+        print(f"❌ Error in ask_question: {str(e)}")  # Debugging: Print the error
+        raise HTTPException(status_code=500, detail=f"❌ Error processing question: {str(e)}")
 
 @app.get("/")
 async def root():
-    return {"message": "PDF Q&A API is running"}
+    """Health check endpoint."""
+    return {"message": "✅ PDF Q&A API is running"}
 
 if __name__ == "__main__":
     import uvicorn
