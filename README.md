@@ -2,6 +2,9 @@
 
 ![PDF Q&A Banner](https://via.placeholder.com/1000x300?text=PDF+Q%26A+Application)
 
+## 🚀 Built for AiPlanet Internship
+This project was built as an **internship project for AiPlanet**.
+
 ## 📌 Project Overview
 The **PDF Q&A Application** is a **Full-Stack project** that allows users to **upload PDFs** and **ask questions** about their contents. It extracts text from the PDFs, builds an **AI-powered knowledge base**, and retrieves **relevant answers** using **FastAPI** (Backend) and **React + Vite** (Frontend).
 
@@ -52,8 +55,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Run FastAPI server
-uvicorn main:app --reload or python main.py ( ANY ONE!)
-
+uvicorn main:app --reload or python -m uvicorn main:app --reload  ( ANY ONE!)
 ```
 🔹 The FastAPI server will start at **`http://127.0.0.1:8000`**
 
@@ -106,4 +108,3 @@ This project is **open-source** and licensed under the **MIT License**.
 
 📩 Feel free to reach out if you have any questions! 🚀  
 📧 Contact: **akhtersharique75@gmail.com**
-
