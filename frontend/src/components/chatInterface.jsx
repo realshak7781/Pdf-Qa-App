@@ -13,27 +13,37 @@ const ChatInterface = () => {
   // Handle File Upload
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
-    if (file && file.type === "application/pdf") {
-      setCurrentFile(file);
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      try {
-        const response = await axios.post(`${API_URL}/upload/`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-
+    if (!file) {
+      alert("Please select a file.");
+      return;
+    }
+  
+    if (file.type !== "application/pdf") {
+      alert("Only PDF files are allowed.");
+      return;
+    }
+  
+    setCurrentFile(file);
+    const formData = new FormData();
+    formData.append("file", file);
+  
+    try {
+      const response = await axios.post(`${API_URL}/upload/`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+  
+      if (response.status === 200) {
         console.log(response.data);
         alert("PDF uploaded successfully!");
-      } catch (error) {
-        console.error("Error uploading file:", error);
-        alert("Failed to upload PDF.");
+      } else {
+        alert("Upload failed: " + response.data.error);
       }
-    } else {
-      alert("Please upload a valid PDF file.");
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      alert("Failed to upload PDF.");
     }
   };
+  
 
   // Handle Sending Message
   const handleSendMessage = async (e) => {
