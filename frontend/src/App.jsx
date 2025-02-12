@@ -1,5 +1,4 @@
 import React from 'react';
-import FileUpload from './components/ChatInterface';
 import ChatInterface from './components/ChatInterface';
 
 function App() {

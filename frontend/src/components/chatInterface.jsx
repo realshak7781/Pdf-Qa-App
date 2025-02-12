@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { Upload, Send } from "lucide-react";
 
-const API_URL = "http://localhost:8000"; // Adjust if your backend runs on a different port
+const API_URL = "http://localhost:8000"; 
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState([]);
