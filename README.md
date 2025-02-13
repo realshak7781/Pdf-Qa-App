@@ -1,6 +1,11 @@
 # PDF Q&A Application
 
-![PDF Q&A Banner](https://via.placeholder.com/1000x300?text=PDF+Q%26A+Application)
+## 🎥 Demo Video
+
+[![Watch the demo](https://img.youtube.com/vi/H57aves14co/0.jpg)](https://youtu.be/H57aves14co)
+
+Click the image above to watch the demo video on YouTube.
+
 
 ## 🚀 Built for AiPlanet Internship
 This project was built as an **internship project for AiPlanet**.
