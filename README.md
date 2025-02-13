@@ -15,6 +15,7 @@ The **PDF Q&A Application** is a **Full-Stack project** that allows users to **u
 ✅ Uses **FastAPI** for backend & **React (Vite)** for frontend  
 ✅ Local **vector database indexing** for fast search & retrieval  
 ✅ Fully **responsive** and **beginner-friendly setup**  
+✅ Requires a **Hugging Face API Key** for AI-powered features  
 
 ## 🛠️ Tech Stack
 ### **Backend (FastAPI)**
@@ -55,11 +56,29 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Run FastAPI server
-uvicorn main:app --reload or python -m uvicorn main:app --reload  ( ANY ONE!)
+python main.py or uvicorn main:app --reload or python -m uvicorn main:app --reload   ( ANY ONE!)
 ```
 🔹 The FastAPI server will start at **`http://127.0.0.1:8000`**
 
-### **3️⃣ Frontend Setup (React + Vite)**
+### **3️⃣ Add Hugging Face API Key**
+This project requires a **Hugging Face API Key** for AI-powered question-answering. 
+
+#### **How to Generate a Hugging Face API Key:**
+1. Go to [Hugging Face](https://huggingface.co/)
+2. Click on **Sign Up** (or log in if you already have an account).
+3. Once logged in, go to **Settings** → **Access Tokens**.
+4. Click **New Token**, set the role to **Write**, and generate the token.
+5. Copy the generated token.
+
+#### **How to Add the API Key to Your Project:**
+1. Create a `.env` file inside the `backend` folder.
+2. Add the following line in your `.env` file:
+   ```
+   HUGGINGFACEHUB_API_TOKEN=your_hugging_face_api_key_here
+   ```
+3. Restart the FastAPI server after adding the API key.
+
+### **4️⃣ Frontend Setup (React + Vite)**
 ```bash
 cd frontend  # Navigate to frontend folder
 
@@ -90,7 +109,8 @@ npm run dev
 ## 🛠️ Troubleshooting
 🔹 If **backend is not working**, check for missing dependencies and ensure FastAPI is running.  
 🔹 If **frontend is not connecting**, verify that **CORS is enabled** in FastAPI.  
-🔹 If you see **Indexing errors**, ensure PDFs are uploaded to the correct folder.
+🔹 If you see **Indexing errors**, ensure PDFs are uploaded to the correct folder.  
+🔹 If AI responses are not working, check if the **Hugging Face API Key** is correctly set in the `.env` file.
 
 ---
 
@@ -108,3 +128,4 @@ This project is **open-source** and licensed under the **MIT License**.
 
 📩 Feel free to reach out if you have any questions! 🚀  
 📧 Contact: **akhtersharique75@gmail.com**
+
